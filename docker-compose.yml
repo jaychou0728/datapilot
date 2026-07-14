@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
+      - duckdb_data:/app/duckdb_data
+      - sqlite_data:/app/data.db
+      - reports_data:/app/reports
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  uploads_data:
+  duckdb_data:
+  sqlite_data:
+  reports_data:
