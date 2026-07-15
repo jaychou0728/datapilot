@@ -1,7 +1,10 @@
 <template>
   <div>
     <h2 style="font-size:18px;font-weight:600;margin:0 0 24px">分析报告</h2>
-    <div v-if="reports.length === 0"><el-empty description="还没有报告" /></div>
+    <div v-if="loading" style="display:flex;justify-content:center;padding:80px 0">
+      <el-icon :size="28" style="animation: spin 1s linear infinite"><Loading /></el-icon>
+    </div>
+    <div v-else-if="reports.length === 0"><el-empty description="还没有报告" /></div>
     <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
       <el-card v-for="r in reports" :key="r.id" shadow="never" style="cursor:pointer" @click="$router.push(`/reports/${r.id}`)">
         <div style="font-size:14px;font-weight:550;margin-bottom:6px">{{ r.title }}</div>
@@ -16,12 +19,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Loading } from '@element-plus/icons-vue'
 import { getReports, deleteReport } from '../api/reports'
 import { formatDate } from '../utils/format'
 import { ElMessageBox } from 'element-plus'
 
 const reports = ref<any[]>([])
-onMounted(async () => { reports.value = (await getReports()) as unknown as any[] })
+const loading = ref(true)
+onMounted(async () => {
+  try { reports.value = (await getReports()) as unknown as any[] }
+  finally { loading.value = false }
+})
 
 async function handleDelete(id: string) {
   await ElMessageBox.confirm('确定删除？', '确认', { type: 'warning' })
@@ -29,3 +37,7 @@ async function handleDelete(id: string) {
   reports.value = reports.value.filter(r => r.id !== id)
 }
 </script>
+
+<style scoped>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>

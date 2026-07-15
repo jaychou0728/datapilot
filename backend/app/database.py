@@ -61,6 +61,23 @@ def init_db():
             filename TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS column_metadata (
+            dataset_id TEXT NOT NULL,
+            column_name TEXT NOT NULL,
+            label TEXT DEFAULT '',
+            unit TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            PRIMARY KEY (dataset_id, column_name)
+        );
+        CREATE TABLE IF NOT EXISTS dataset_versions (
+            id TEXT PRIMARY KEY,
+            dataset_id TEXT NOT NULL,
+            version INTEGER NOT NULL,
+            label TEXT DEFAULT '',
+            row_count INTEGER DEFAULT 0,
+            column_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     try:
         conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")

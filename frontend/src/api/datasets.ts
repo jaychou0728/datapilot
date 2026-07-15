@@ -25,5 +25,6 @@ export function previewDataset(id: string, page: number = 1, pageSize: number = 
 }
 
 export function getExportUrl(id: string): string {
-  return `http://localhost:8000/api/datasets/${id}/export`
+  const base = import.meta.env.VITE_API_BASE_URL || '/api'
+  return `${base}/datasets/${id}/export`
 }

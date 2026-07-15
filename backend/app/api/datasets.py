@@ -41,8 +41,10 @@ async def upload(file: UploadFile = File(...), user_id: str = Depends(get_curren
         info = svc.ingest(file.filename, content, user_id=user_id)
         hist_svc.log(user_id, "upload", f"上传了 {file.filename}（{info.rows} 行）", info.id)
         lineage_svc.log(user_id, info.id, None, "upload", "table:data",
-                        f"上传 {file.filename} ({info.rows}行, {info.columns}列)",
-                        {}, {"row_count": info.rows, "columns": info.columns})
+                        f"上传 {file.filename}",
+                        {"row_count": 0, "columns_count": 0, "columns": []},
+                        {"row_count": info.rows, "columns_count": info.columns,
+                         "columns": [f.name for f in info.fields]})
         return success(data=info.model_dump(mode="json"))
     except Exception as e:
         return error(500, str(e))
@@ -67,11 +69,14 @@ def get_dataset(dataset_id: str):
 @router.delete("/{dataset_id}")
 def delete_dataset(dataset_id: str, user: dict = Depends(get_current_user)):
     svc = get_service()
-    if svc.get_info(dataset_id) is None:
+    info = svc.get_info(dataset_id)
+    if info is None:
         return error(404, "数据集不存在")
     if user["role"] != "admin" and not svc.is_owner(dataset_id, user["id"]):
         return error(403, "无权限删除此数据集")
+    ds_name = info.get("name", dataset_id)
     svc.delete(dataset_id)
+    hist_svc.log(user["id"], "delete", f"删除了数据集 {ds_name}", dataset_id)
     return success(message="已删除")
 
 

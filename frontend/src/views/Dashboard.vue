@@ -19,7 +19,11 @@
       </div>
     </div>
 
-    <div v-if="datasets.length === 0" style="margin-top:100px">
+    <div v-if="loading" style="display:flex;justify-content:center;padding:80px 0">
+      <el-icon :size="28" style="animation: spin 1s linear infinite"><Loading /></el-icon>
+    </div>
+
+    <div v-else-if="datasets.length === 0" style="margin-top:100px">
       <el-empty description="还没有数据集">
         <el-button type="primary" @click="$router.push('/upload')">上传第一份数据</el-button>
       </el-empty>
@@ -59,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Loading } from '@element-plus/icons-vue'
 import { getDatasets, deleteDataset } from '../api/datasets'
 import { getDashboardStats } from '../api/dashboard'
 import { formatDate } from '../utils/format'
@@ -66,14 +71,16 @@ import { ElMessageBox } from 'element-plus'
 
 const datasets = ref<any[]>([])
 const stats = ref<any>(null)
+const loading = ref(true)
 
 onMounted(async () => {
-  datasets.value = (await getDatasets()) as unknown as any[]
+  try { datasets.value = (await getDatasets()) as unknown as any[] }
+  finally { loading.value = false }
   try { stats.value = await getDashboardStats() } catch { /* no-op */ }
 })
 
 function iconFor(type: string): string {
-  return { upload: '+', clean: String.fromCodePoint(0x2714), query: String.fromCodePoint(0x25B6), chart: String.fromCodePoint(0x25A0), report: String.fromCodePoint(0x25A3) }[type] || String.fromCodePoint(0x25CF)
+  return { upload: '+', clean: '✔', query: '▶', chart: '■', report: '▣', delete: '✖', agent: '⚡' }[type] || '●'
 }
 
 async function handleDelete(id: string) {
@@ -84,6 +91,7 @@ async function handleDelete(id: string) {
 </script>
 
 <style scoped>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 32px; }
 .stat-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 18px 20px; }
 .stat-value { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; }

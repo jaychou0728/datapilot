@@ -144,69 +144,9 @@ class CleaningService:
         profile = self._build_profile()
         profile_json = json.dumps(profile, ensure_ascii=False, default=str)
 
-        prompt = f"""你是数据清洗专家。根据以下数据画像，找出数据质量问题，给出具体修复方案。
+        from app.prompts import prompt as get_prompt
 
-## 数据画像
-{profile_json}
-
-## 要求
-对每个问题输出一个 JSON 对象（只返回 JSON 数组）：
-[
-  {{
-    "title": "问题简短标题（中文，10字内）",
-    "description": "用通俗语言解释问题，引用数据中的具体例子",
-    "severity": "high|medium|low",
-    "affected_columns": ["列名"],
-    "affected_rows_estimate": 数字,
-    "fix_description": "修复方案的一句话说明",
-    "operation": "操作名（从下方列表选）",
-    "params": {{}}
-  }}
-]
-
-## 可用操作（必须从以下列表中选择，不要自己发明）
-### clean_currency — 清理货币字符串转数字
-   params: {{"column": "列名"}}
-   说明: 自动去除 CNY/USD/$/¥/€ 前缀、逗号、空格，转为纯数字
-
-### extract_number — 从字符串中提取数字
-   params: {{"column": "列名", "units": ["可选的后缀列表如 inches GB g mAh"]}}
-   说明: 从 "6.1 inches" "6GB" "174g" 中提取数字部分
-
-### normalize_case — 统一大小写
-   params: {{"column": "列名", "mode": "upper|lower|title"}}
-   说明: 解决 POCO vs Poco 这类问题
-
-### drop_column — 删除冗余列
-   params: {{"column": "列名"}}
-
-### rename_column — 重命名列
-   params: {{"old_name": "旧名", "new_name": "新名"}}
-
-### drop_outliers — 标记异常值为空
-   params: {{"column": "列名", "min": 下限, "max": 上限}}
-   说明: 如重量>500g异常、年份>2025异常
-
-### deduplicate — 删除完全重复的行
-   params: {{}}
-
-### trim_strings — 去除所有文本列的前后空格
-   params: {{}}
-
-### fill_nulls — 填充空值
-   params: {{"column": "列名", "strategy": "mean|median|mode|drop"}}
-
-## 检查要点
-- 货币/价格列带CNY/$/¥前缀 → clean_currency
-- 数值带单位(g, GB, inches, mAh) → extract_number
-- 大小写不一致 → normalize_case
-- 处理器的中英文列信息重复 → drop_column 删除其一
-- CPU品牌/系列/层级都冗余 → drop_column
-- 异常值年份>2024、重量>500g → drop_outliers
-- 重复行 → deduplicate
-- 空值 → fill_nulls
-
-只返回 JSON 数组。"""
+        sys_msg, user_msg = get_prompt("clean", profile_json=profile_json)
 
         import asyncio
         try:
@@ -216,8 +156,8 @@ class CleaningService:
             asyncio.set_event_loop(loop)
 
         response = await self.ai.chat([
-            {"role": "system", "content": "你是数据清洗专家。只输出合法 JSON 数组。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": user_msg},
         ], temperature=0.2)
 
         text = response.strip()
@@ -228,7 +168,7 @@ class CleaningService:
 
         try:
             suggestions = json.loads(text)
-            return {"suggestions": suggestions, "profile_summary": f"共{profile['total_rows']}行{profile['total_columns']}列"}
+            return {"suggestions": suggestions, "profile_summary": f"共{profile['total_rows']}行{profile['total_columns']}列", "total_rows": profile["total_rows"], "total_columns": profile["total_columns"]}
         except json.JSONDecodeError:
             return {"suggestions": [], "raw_response": text, "profile_summary": ""}
 

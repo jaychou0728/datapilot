@@ -6,7 +6,12 @@ export function formatNumber(n: number | string): string {
 
 export function formatDate(d: string): string {
   if (!d) return ''
-  const date = new Date(d)
+  // Normalize: replace space with T so JS parses it consistently as local time
+  let normalized = d.trim()
+  if (normalized.indexOf('T') === -1 && normalized.indexOf(' ') !== -1) {
+    normalized = normalized.replace(' ', 'T')
+  }
+  const date = new Date(normalized)
   if (isNaN(date.getTime())) return d
   return date.toLocaleDateString('zh-CN')
 }

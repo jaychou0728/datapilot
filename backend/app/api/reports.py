@@ -48,8 +48,12 @@ def get_report(report_id: str):
     return success(data=report)
 
 @router.delete("/{report_id}")
-def delete_report(report_id: str):
+def delete_report(report_id: str, user: dict = Depends(get_current_user)):
+    report = svc.get_report(report_id)
+    if not report:
+        return error(404, "报告不存在")
     svc.delete(report_id)
+    hist_svc.log(user["id"], "delete", f"删除了报告 {report.get('title', report_id)}", report.get("dataset_id"))
     return success(message="已删除")
 
 @router.get("/{report_id}/export")
@@ -100,7 +104,9 @@ def _render_report_html(report: dict) -> str:
         elif s["type"] == "chart":
             opt_json = json.dumps(s.get("echarts_option", {}), ensure_ascii=False)
             chart_divs += f"<h3>{s['title']}</h3><div id='chart{chart_idx}' class='chart'></div><p class='caption'>{s.get('content', '')}</p>"
-            chart_scripts += f"var c{chart_idx}=echarts.init(document.getElementById('chart{chart_idx}'));c{chart_idx}.setOption({opt_json});"
+            chart_scripts += f"""var c{chart_idx}=echarts.init(document.getElementById('chart{chart_idx}'));
+c{chart_idx}.setOption({{color:["#5e6ad2","#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"]}});
+c{chart_idx}.setOption({opt_json});"""
             chart_idx += 1
 
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">

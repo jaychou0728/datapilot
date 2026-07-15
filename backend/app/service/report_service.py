@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 from app.database import get_db
 from app.ai.deepseek_client import DeepSeekClient
+from app.prompts import prompt
 
 REPORTS_DIR = "reports"
 
@@ -70,26 +71,7 @@ class ReportService:
         report_id = str(uuid.uuid4())
         summary = self._summarize_profile(data_profile)
 
-        prompt = f"""你是资深数据分析师。根据以下数据画像，生成一份完整的分析报告。
-
-## 数据画像
-{summary}
-
-## 输出格式
-返回 JSON（只返回 JSON）：
-{{
-  "title": "报告标题（20字内）",
-  "sections": [
-    {{"type": "text", "title": "小节标题", "content": "分析文字（200-400字，含具体数字和百分比）"}},
-    {{"type": "chart", "title": "图表标题", "echarts_option": {{完整ECharts配置（series.data用聚合数据填）}}, "content": "图表说明（50字内）"}}
-  ]
-}}
-
-## 要求
-- 至少5个section: 概览、趋势分析、对比分析、异常发现、建议
-- type=chart的section必须有echarts_option，数据用聚合数据填充真实值
-- 配色用["#5e6ad2","#91cc75","#fac858","#ee6666","#73c0de"]
-- 中文，专业简洁，引用具体数据"""
+        sys_msg, user_msg = prompt("report", summary=summary)
 
         try:
             loop = asyncio.get_event_loop()
@@ -98,9 +80,9 @@ class ReportService:
             asyncio.set_event_loop(loop)
 
         response = await self.ai.chat([
-            {"role": "system", "content": "你是资深数据分析师。只输出合法JSON，不要任何markdown包裹。"},
-            {"role": "user", "content": prompt},
-        ], temperature=0.3, max_tokens=8192)
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": user_msg},
+        ], temperature=0.3, max_tokens=16384)
 
         text = response.strip()
         if text.startswith("```json"): text = text.split("```json")[1].split("```")[0].strip()
@@ -125,8 +107,8 @@ class ReportService:
 
         conn = get_db()
         conn.execute(
-            "INSERT INTO reports (id, user_id, dataset_id, title, file_path) VALUES (?, ?, ?, ?, ?)",
-            (report_id, user_id, dataset_id, full["title"], file_path),
+            "INSERT INTO reports (id, user_id, dataset_id, title, file_path, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (report_id, user_id, dataset_id, full["title"], file_path, datetime.now().isoformat()),
         )
         conn.commit()
         conn.close()

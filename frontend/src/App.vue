@@ -1,33 +1,39 @@
 <template>
   <div class="shell">
-    <header class="topbar">
-      <router-link to="/" class="logo">DataPilot</router-link>
-      <nav class="nav">
-        <router-link to="/" class="nav-item">首页</router-link>
-        <router-link to="/upload" class="nav-item">上传</router-link>
-        <router-link to="/history" class="nav-item">历史</router-link>
-        <router-link to="/reports" class="nav-item">报告</router-link>
-        <router-link v-if="auth.user?.role === 'admin'" to="/users" class="nav-item">用户</router-link>
-      </nav>
-      <div style="flex:1"></div>
-      <div v-if="auth.isLoggedIn" style="display:flex;align-items:center;gap:8px;font-size:13px">
-        <span style="color:#5c5c5c">{{ auth.user?.username }}</span>
-        <el-button size="small" text @click="handleLogout" style="font-size:12px;color:#828282">退出</el-button>
-      </div>
-    </header>
-    <main class="main">
+    <template v-if="route.path !== '/login'">
+      <header class="topbar">
+        <router-link to="/" class="logo">DataPilot</router-link>
+        <nav class="nav">
+          <router-link to="/" class="nav-item">首页</router-link>
+          <router-link to="/upload" class="nav-item">上传</router-link>
+          <router-link to="/history" class="nav-item">历史</router-link>
+          <router-link to="/reports" class="nav-item">报告</router-link>
+          <router-link v-if="auth.user?.role === 'admin'" to="/users" class="nav-item">用户</router-link>
+        </nav>
+        <div style="flex:1"></div>
+        <div v-if="auth.isLoggedIn" style="display:flex;align-items:center;gap:8px;font-size:13px">
+          <span style="color:#5c5c5c">{{ auth.user?.username }}</span>
+          <el-button size="small" text @click="handleLogout" style="font-size:12px;color:#828282">退出</el-button>
+        </div>
+      </header>
+      <main class="main">
+        <router-view />
+      </main>
+    </template>
+    <template v-else>
       <router-view />
-    </main>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/useAuth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 onMounted(() => { auth.checkAuth() })
 

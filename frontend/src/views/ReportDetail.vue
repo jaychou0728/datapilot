@@ -38,7 +38,8 @@ onMounted(async () => {
 })
 
 function exportPdf() {
-  window.open(`http://localhost:8000/api/reports/${route.params.id}/export`, '_blank')
+  const base = import.meta.env.VITE_API_BASE_URL || '/api'
+  window.open(`${base}/reports/${route.params.id}/export`, '_blank')
 }
 </script>
 

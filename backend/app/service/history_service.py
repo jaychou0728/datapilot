@@ -1,12 +1,13 @@
 import uuid
+from datetime import datetime
 from app.database import get_db
 
 class HistoryService:
     def log(self, user_id: str, type: str, detail: str, dataset_id: str | None = None):
         conn = get_db()
         conn.execute(
-            "INSERT INTO operation_logs (id, user_id, type, detail, dataset_id) VALUES (?, ?, ?, ?, ?)",
-            (str(uuid.uuid4()), user_id, type, detail, dataset_id),
+            "INSERT INTO operation_logs (id, user_id, type, detail, dataset_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (str(uuid.uuid4()), user_id, type, detail, dataset_id, datetime.now().isoformat()),
         )
         conn.commit()
         conn.close()

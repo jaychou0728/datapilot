@@ -115,6 +115,8 @@ class DatasetService:
 
     def delete(self, dataset_id: str):
         self.file_store.delete(dataset_id)
+        from app.service.version_service import VersionService
+        VersionService().delete_dataset(dataset_id, duckdb_dir=self.duckdb_dir)
         db_path = os.path.join(self.duckdb_dir, f"{dataset_id}.duckdb")
         if os.path.exists(db_path):
             os.remove(db_path)

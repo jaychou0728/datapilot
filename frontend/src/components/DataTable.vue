@@ -16,6 +16,9 @@
         :min-width="120"
         show-overflow-tooltip
       />
+      <template #empty>
+        <el-empty :image-size="80" description="暂无数据" />
+      </template>
     </el-table>
     <div class="pagination-bar" v-if="total > 0">
       <el-pagination
